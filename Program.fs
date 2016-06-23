@@ -1,7 +1,20 @@
-﻿// Weitere Informationen zu F# unter "http://fsharp.org".
-// Weitere Hilfe finden Sie im Projekt "F#-Lernprogramm".
+﻿open Suave
+open Suave.Operators
+open Suave.Successful
+open Suave.Filters
+open System.IO
+
 
 [<EntryPoint>]
 let main argv = 
-    printfn "%A" argv
-    0 // Exitcode aus ganzen Zahlen zurückgeben
+    let json fileName =
+        let content = File.ReadAllText fileName
+        content.Replace("\r", "").Replace("\n", "")
+        |> OK >=> Writers.setMimeType "application/json"
+
+    let user = pathScan "/users/%s" (fun _ -> "user.json" |> json)
+    let repos = pathScan "/users/%s/repos" (fun _ -> "repos.json" |> json)
+    let mockApi = choose [repos; user]
+
+    startWebServer defaultConfig mockApi
+    0
